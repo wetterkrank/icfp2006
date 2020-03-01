@@ -33,6 +33,14 @@ void dumpArrayToDisk (uint* arrList, uint** arr, uint id)
     fclose(fp);
 };
 
+void writeInstructionToFile (uint pos, int operator, int A, int B, int C, uint value, uint* regs)
+{
+    FILE* fp = fopen("./opdump", "a");
+    if (operator == 13) fprintf(fp, "%d. op: %d, Val %d -> reg %d\n", pos, operator, value, A);
+    else fprintf(fp, "%d. op: %d, reg %d: %d, reg %d: %d, reg %d: %d\n", pos, operator, A, regs[A], B, regs[B], C, regs[C]);               
+    fclose(fp);
+};
+
 void listNewArray(uint* arrCount, uint** arrList, uint newArrLen)
 // add 1 pointer to the list, allocate memory for it, increase arrayCount by 1
 // todo: get rid of the separate list and keep the size in the struct
@@ -40,16 +48,8 @@ void listNewArray(uint* arrCount, uint** arrList, uint newArrLen)
     // printf("Expanding the list; arrCount: %d\n", *arrCount);
     uint newListLen = *arrCount + 1;
 
-    if (*arrCount == 0) // todo: get rid of the 0 case to speed up
-    {
-        *arrList = calloc(newListLen, sizeof(uint));
-        if (*arrList == NULL) exit(2);
-    }
-    else
-    {
-        *arrList = realloc(*arrList, newListLen*sizeof(uint));
-        if (*arrList == NULL) exit(2);
-    }
+    *arrList = realloc(*arrList, newListLen*sizeof(uint));
+    if (*arrList == NULL) exit(2);
 
     (*arrList)[*arrCount] = newArrLen;
     *arrCount = *arrCount + 1;
@@ -58,20 +58,12 @@ void listNewArray(uint* arrCount, uint** arrList, uint newArrLen)
 
 uint addArray(uint* arrCount, uint** arrList, uint*** arr, uint newArrLen)
 {
-    // printf("\nAdding an array; arrCount: %d, newArrLen: %d\n", *arrCount, newArrLen);
+    //printf("\nAdding an array; arrCount: %d, newArrLen: %d\n", *arrCount, newArrLen);
 
-    if (*arrCount == 0) // todo: get rid of the 0 case to speed up
-    {
-        *arr = malloc(1*sizeof(*arr));
-        if (*arr == NULL) exit(2);
-    }
-    else
-    {
-        (*arr) = realloc(*arr, (*arrCount+1)*sizeof(*arr));
-        // printf("Allocated for **arr: %d\n", sizeof(*arr));
-    };
+    (*arr) = realloc(*arr, (*arrCount+1)*sizeof(*arr)); // add memory for the new pointer
+    if (*arr == NULL) exit(2);
 
-    (*arr)[*arrCount] = calloc(newArrLen, sizeof(uint));
+    (*arr)[*arrCount] = calloc(newArrLen, sizeof(uint)); // add memory for the data it's pointing at
     if ((*arr)[*arrCount] == NULL) exit(2);
 
     listNewArray(arrCount, arrList, newArrLen);
@@ -80,15 +72,15 @@ uint addArray(uint* arrCount, uint** arrList, uint*** arr, uint newArrLen)
     return *arrCount-1; // todo: reuse old slots
 };
 
-void copyArray(uint* arrCount, uint** arrList, uint*** arr, uint srcID, uint destID)
+void loadArray(uint* arrCount, uint** arrList, uint*** arr, uint srcID)
 {
-    (*arr)[destID] = realloc((*arr)[destID], (*arrList)[srcID]*sizeof(uint));
-    if ((*arr)[destID] == NULL) exit(2);
+    (*arr)[0] = realloc((*arr)[0], (*arrList)[srcID]*sizeof(uint));
+    if ((*arr)[0] == NULL) exit(2);
 
-    (*arrList)[destID] = (*arrList)[srcID];
-    memcpy((*arr)[destID], (*arr)[srcID], (*arrList)[srcID]*sizeof(uint));
+    (*arrList)[0] = (*arrList)[srcID];
+    memcpy((*arr)[0], (*arr)[srcID], (*arrList)[srcID]*sizeof(uint));
 
-    // printf("Copied array %u to array %u\n", srcID, destID);
+    // printf("Copied array %u to array %u\n", srcID, 0);
 };
 
 void dropArray(uint* arrCount, uint** arrList, uint*** arr, uint id)
