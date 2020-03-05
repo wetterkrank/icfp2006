@@ -7,24 +7,14 @@
 
 typedef unsigned uint;
 
-void getOperator(uint instruction, int* op, int* A, int* B, int* C, uint* V)
+void getOperator(uint instruction, int* op, int* A, int* B, int* C)
 {
-    *op = (instruction >> 28) & 15; // bits 28-32
-    if (*op != 13) {
-        *C = instruction & 7; // bits 1-3
-        *B = (instruction >> 3) & 7; // bits 4-6
-        *A = (instruction >> 6) & 7; // bits 7-9
-    }
-    else {
-        *A = (instruction >> 25) & 7; // bits 26-28
-        *V = (instruction & 0x01FFFFFF); // bits 1-25
-    };
 };
 
 int main (void) {
 
     // get UM file size; note: no error handling for file ops
-    FILE* fp = fopen("./sandmark.umz", "rb");
+    FILE* fp = fopen("sandmark.umz", "rb");
     fseek(fp, 0L, SEEK_END);
     uint fileSize = ftell(fp); // todo: check if it's the factor of size(uint)
     rewind(fp);
@@ -47,13 +37,17 @@ int main (void) {
     uint regs[8] = {0};
     uint pos = 0; // instruction to execute
 
-    uint value;
-    int operator, A, B, C;
+    char operator, A, B, C;
+    char ch;
+    uint instruction;
 
     for (; pos < arrList[0]; pos++)
     {
-        uint instruction = arr[0][pos];
-        getOperator(instruction, &operator, &A, &B, &C, &value);
+        instruction = arr[0][pos];
+        operator = (instruction >> 28) & 15;
+        C = instruction & 7;
+        B = (instruction >> 3) & 7;
+        A = (instruction >> 6) & 7;
 
         //if (operator == 13) printf("%d. op: %d, Val %d -> reg %d\n", pos, operator, value, A);
         //else printf("%d. op: %d, reg %d: %d, reg %d: %d, reg %d: %d\n", pos, operator, A, regs[A], B, regs[B], C, regs[C]);               
@@ -70,16 +64,16 @@ int main (void) {
                 arr[regs[A]][regs[B]] = regs[C];
                 break;
             case 3:
-                regs[A] = (regs[B] + regs[C]) & 0xFFFFFFFF; // aka % 0x100000000
+                regs[A] = regs[B] + regs[C];
                 break;
             case 4:
-                regs[A] = (regs[B] * regs[C]) & 0xFFFFFFFF;
+                regs[A] = regs[B] * regs[C];
                 break;
             case 5:
                 regs[A] = regs[B] / regs[C];
                 break;
             case 6:
-                regs[A] = ~regs[B] | ~regs[C];
+                regs[A] = ~(regs[B] & regs[C]);
                 break;
             case 7:
                 exit(0);
@@ -93,6 +87,11 @@ int main (void) {
                 printf("%c", regs[C]);
                 break;
             case 11:
+                ch = fgetc (stdin);
+                if (EOF == ch) 
+                    regs[C] = 0xFFFFFFFF;
+                else 
+                    regs[C] = ch;
                 break;
             case 12:
                 // printf("%d: Load array %d, run position %d\n", pos, regs[B], regs[C]);
@@ -101,7 +100,7 @@ int main (void) {
                 pos = regs[C]-1; // pos++ at the next loop
                 break;
             case 13:
-                regs[A] = value;
+                regs[(instruction >> 25) & 7] = instruction & 0x01FFFFFF; // bits 26-28 and 1-25
         };
     };
 
