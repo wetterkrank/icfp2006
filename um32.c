@@ -1,6 +1,5 @@
 // A 32-bit UM version using the standard memory allocation routines.
 // Runs sandmark.umz in less than 1 minute. 
-// Compile with -m32 parameter.
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -31,7 +30,6 @@ int main (void) {
 
     // init controls
     uint* zero;
-    
     zero = malloc(fileSize+sizeof(uint)); if (zero == NULL) exit(1);
     fread(zero+1, sizeof(uint), progLen, fp);
     fclose(fp);
@@ -39,10 +37,9 @@ int main (void) {
     zero[0] = progLen;
 
     uint regs[8] = {0};
-    uint pos = 1; // array cell to execute, skipping 0 pos where we keep the size
+    uint pos = 1; // skipping 0 cell where we keep the size
 
     char operator, A, B, C;
-    char ch;
     uint instruction;
 
     uint cycles = 0;
@@ -89,20 +86,20 @@ int main (void) {
             case 7:
                 exit(0);
             case 8: {
-                    arr = calloc(regs[C]+1, sizeof(uint));
-                    arr[0] = regs[C];
-                    regs[B] = (uint)arr;
-                    break; }
+                arr = calloc(regs[C]+1, sizeof(uint));
+                arr[0] = regs[C];
+                regs[B] = (uint)arr;
+                break; }
             case 9:
                 free((uint *)regs[C]);
                 break;
             case 10:
                 printf("%c", regs[C]);
                 break;
-            case 11:
-                ch = fgetc (stdin);
+            case 11: {
+                char ch = fgetc (stdin);
                 if (EOF == ch) regs[C] = 0xFFFFFFFF; else regs[C] = ch;
-                break;
+                break; }
             case 12:
                 if (regs[B] != 0) {
                     free(zero);
