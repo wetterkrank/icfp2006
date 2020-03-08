@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 
 typedef uintptr_t uint;
 
@@ -19,10 +20,20 @@ uint myByteSwap(uint num)
     return res;
 };
 
-int main (void) {
+void die(const char *message)
+{
+    if (errno) perror(message);
+    else printf("error: %s\n", message);
+    exit(1);
+}
 
-    // get UM file size; note: no error handling for file ops
-    FILE* fp = fopen("sandmark.umz", "rb");
+int main (int args, const char *av[]) 
+{
+    setbuf(stdout, NULL);
+    if (args != 2) die("usage: um.exe <program.um>");
+
+    // get UM file size; still no error handling for file ops
+    FILE* fp = fopen(av[1], "rb");
     fseek(fp, 0L, SEEK_END);
     uint fileSize = ftell(fp);
     uint progLen = fileSize/4; // todo: check if it's the factor of size(uint)
@@ -30,19 +41,18 @@ int main (void) {
 
     // init controls
     uint* zero;
-    zero = malloc(fileSize+sizeof(uint)); if (zero == NULL) exit(1);
+    zero = malloc(fileSize+sizeof(uint)); 
+    if (zero == NULL) die("program array memory allocation failed");
     fread(zero+1, sizeof(uint), progLen, fp);
     fclose(fp);
     for (uint i = 0; i < progLen; i++) zero[i] = myByteSwap(zero[i]);
     zero[0] = progLen;
 
     uint regs[8] = {0};
-    uint pos = 1; // skipping 0 cell where we keep the size
+    uint pos = 1; // skipping 0 cell used to keep the program size
 
     char operator, A, B, C;
     uint instruction;
-
-    uint cycles = 0;
 
     for (; pos < progLen; pos++)
     {
@@ -55,8 +65,6 @@ int main (void) {
 
         //if (operator == 13) printf("%d. op: %d, Val %d -> reg %d\n", pos, operator, instruction & 0x01FFFFFF, A);
         //else printf("%d. op: %d, reg %d: %d, reg %d: %d, reg %d: %d\n", pos, operator, A, regs[A], B, regs[B], C, regs[C]);
-
-        cycles++; if (cycles == 10000) {fflush(stdout); cycles = 0;}
 
         switch (operator) 
         {
@@ -87,6 +95,7 @@ int main (void) {
                 exit(0);
             case 8: {
                 arr = calloc(regs[C]+1, sizeof(uint));
+                if (arr == NULL) die("new array memory allocation failed");
                 arr[0] = regs[C];
                 regs[B] = (uint)arr;
                 break; }
@@ -97,6 +106,7 @@ int main (void) {
                 printf("%c", regs[C]);
                 break;
             case 11: {
+                fflush(stdout);
                 char ch = fgetc (stdin);
                 if (EOF == ch) regs[C] = 0xFFFFFFFF; else regs[C] = ch;
                 break; }
@@ -106,7 +116,7 @@ int main (void) {
                     arr = (uint *)regs[B];
                     progLen = arr[0];
                     zero = malloc((progLen+1)*sizeof(uint));
-                    if (zero == NULL) exit(1);
+                    if (zero == NULL) die("program array memory allocation failed");
                     memcpy(zero, arr, (progLen+1)*sizeof(uint)); }
                 pos = regs[C]; // pos will ++ at the next loop
                 break;
