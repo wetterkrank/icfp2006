@@ -18,7 +18,7 @@ uint myByteSwap(uint num)
     b3 = (num & 0xff000000) >> 24u;
     res = b0 | b1 | b2 | b3;
     return res;
-};
+}
 
 void die(const char *message)
 {
@@ -33,20 +33,20 @@ int main (int args, const char *av[])
     if (args != 2) die("usage: um.exe <program.um>");
 
     // get UM file size; still no error handling for file ops
-    FILE* fp = fopen(av[1], "rb");
+    FILE *fp = fopen(av[1], "rb");
     fseek(fp, 0L, SEEK_END);
     uint fileSize = ftell(fp);
     uint progLen = fileSize/4; // todo: check if it's the factor of size(uint)
     rewind(fp);
 
     // init controls
-    uint* zero;
+    uint *zero;
     zero = malloc(fileSize+sizeof(uint)); 
     if (zero == NULL) die("program array memory allocation failed");
     fread(zero+1, sizeof(uint), progLen, fp);
     fclose(fp);
-    for (uint i = 0; i < progLen; i++) zero[i] = myByteSwap(zero[i]);
-    zero[0] = progLen;
+    for (uint i = 1; i <= progLen; i++) zero[i] = myByteSwap(zero[i]); //note: <= progLen
+    zero[0] = progLen; //todo: move to struct
 
     uint regs[8] = {0};
     uint pos = 1; // skipping 0 cell used to keep the program size
@@ -54,17 +54,17 @@ int main (int args, const char *av[])
     char operator, A, B, C;
     uint instruction;
 
-    for (; pos < progLen; pos++)
+    for (; pos <= progLen; pos++)
     {
         instruction = zero[pos];
         operator = (instruction >> 28) & 15;
         C = instruction & 7;
         B = (instruction >> 3) & 7;
         A = (instruction >> 6) & 7;
-        uint* arr; //tmp
+        uint *arr; //tmp
 
-        //if (operator == 13) printf("%d. op: %d, Val %d -> reg %d\n", pos, operator, instruction & 0x01FFFFFF, A);
-        //else printf("%d. op: %d, reg %d: %d, reg %d: %d, reg %d: %d\n", pos, operator, A, regs[A], B, regs[B], C, regs[C]);
+        //if (operator == 13) printf("%d. op: %d, Val %d -> reg %d\n", pos-1, operator, instruction & 0x01FFFFFF, A);
+        //else printf("%d. op: %d, reg %d: %d, reg %d: %d, reg %d: %d\n", pos-1, operator, A, regs[A], B, regs[B], C, regs[C]);
 
         switch (operator) 
         {
@@ -92,6 +92,7 @@ int main (int args, const char *av[])
                 regs[A] = ~(regs[B] & regs[C]);
                 break;
             case 7:
+                printf("machine halted\n");
                 exit(0);
             case 8: {
                 arr = calloc(regs[C]+1, sizeof(uint));
@@ -125,5 +126,6 @@ int main (int args, const char *av[])
         };
     };
 
+    printf("end of program\n");
     return 0;
 };
