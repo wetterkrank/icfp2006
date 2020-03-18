@@ -13,7 +13,7 @@ void bitPrint (unsigned num)
   printf("\n");
 };
 
-void dumpArrays (uint arrCount, uint* arrList, uint** arr)
+void dumpArrays (uint arrCount, uint *arrList, uint **arr)
 {
     for (int i=0; i<arrCount; i++)
     {
@@ -26,14 +26,14 @@ void dumpArrays (uint arrCount, uint* arrList, uint** arr)
     }
 };
 
-void dumpArrayToDisk (uint* arrList, uint** arr, uint id)
+void dumpArrayToDisk (uint *arrList, uint **arr, uint id)
 {
-    FILE* fp = fopen("./arrdump", "wb");
+    FILE *fp = fopen("./arrdump", "wb");
     fwrite(arr[id], sizeof(uint), arrList[id], fp);
     fclose(fp);
 };
 
-void writeInstructionToFile (uint pos, int operator, int A, int B, int C, uint value, uint* regs)
+void writeInstructionToFile (uint pos, int operator, int A, int B, int C, uint value, uint *regs)
 {
     FILE* fp = fopen("./opdump", "a");
     if (operator == 13) fprintf(fp, "%d. op: %d, Val %d -> reg %d\n", pos, operator, value, A);
@@ -41,7 +41,7 @@ void writeInstructionToFile (uint pos, int operator, int A, int B, int C, uint v
     fclose(fp);
 };
 
-void listNewArray(uint* arrCount, uint** arrList, uint newArrLen)
+void listNewArray(uint *arrCount, uint **arrList, uint newArrLen)
 // add 1 pointer to the list, allocate memory for it, increase arrayCount by 1
 // todo: get rid of the separate list and keep the size in the struct
 {
@@ -56,7 +56,7 @@ void listNewArray(uint* arrCount, uint** arrList, uint newArrLen)
     // printf("List expanded; new arrCount: %d\n", *arrCount);
 };
 
-uint addArray(uint* arrCount, uint** arrList, uint*** arr, uint newArrLen)
+uint addArray(uint *arrCount, uint **arrList, uint ***arr, uint newArrLen)
 {
     //printf("\nAdding an array; arrCount: %d, newArrLen: %d\n", *arrCount, newArrLen);
 
@@ -72,7 +72,7 @@ uint addArray(uint* arrCount, uint** arrList, uint*** arr, uint newArrLen)
     return *arrCount-1; // todo: reuse old slots
 };
 
-void loadArray(uint* arrCount, uint** arrList, uint*** arr, uint srcID)
+void loadArray(uint *arrCount, uint **arrList, uint ***arr, uint srcID)
 {
     (*arr)[0] = realloc((*arr)[0], (*arrList)[srcID]*sizeof(uint));
     if ((*arr)[0] == NULL) exit(2);
@@ -83,11 +83,10 @@ void loadArray(uint* arrCount, uint** arrList, uint*** arr, uint srcID)
     // printf("Copied array %u to array %u\n", srcID, 0);
 };
 
-void dropArray(uint* arrCount, uint** arrList, uint*** arr, uint id)
+void dropArray(uint *arrCount, uint **arrList, uint ***arr, uint id)
 // todo: actually downsize arr when dropping an array?
 {
     // printf("Removing array; arrCount: %d, id to remove: %d\n", *arrCount, id);
     free((*arr)[id]);
     (*arrList)[id] = 0;
 };
-

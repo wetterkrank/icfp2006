@@ -1,3 +1,4 @@
+// Universal Machine for ICFP 2006, v0 too slow
 // Task: http://boundvariable.org/task.shtml
 
 #include "tools.h"
@@ -7,21 +8,19 @@
 
 typedef unsigned uint;
 
-void getOperator(uint instruction, int* op, int* A, int* B, int* C)
+int main (int args, const char *av[]) 
 {
-};
-
-int main (void) {
+    if (args != 2) { printf("usage: um.exe <program.um>\n"); exit(1); }
 
     // get UM file size; note: no error handling for file ops
-    FILE* fp = fopen("sandmark.umz", "rb");
+    FILE *fp = fopen(av[1], "rb");
     fseek(fp, 0L, SEEK_END);
     uint fileSize = ftell(fp); // todo: check if it's the factor of size(uint)
     rewind(fp);
 
     // init controls
-    uint* arrList; // to keep the array lengths
-    uint** arr; // a kind of jagged array of arrays
+    uint *arrList; // to keep the array lengths
+    uint **arr; // a kind of jagged array of arrays
     
     arr = malloc(1*sizeof(arr)); if (arr == NULL) exit(1);
     arr[0] = malloc(fileSize); if (arr[0] == NULL) exit(1);
@@ -49,7 +48,7 @@ int main (void) {
         B = (instruction >> 3) & 7;
         A = (instruction >> 6) & 7;
 
-        //if (operator == 13) printf("%d. op: %d, Val %d -> reg %d\n", pos, operator, value, A);
+        //if (operator == 13) printf("%d. op: %d, Val %d -> reg %d\n", pos, operator, instruction & 0x01FFFFFF, A);
         //else printf("%d. op: %d, reg %d: %d, reg %d: %d, reg %d: %d\n", pos, operator, A, regs[A], B, regs[B], C, regs[C]);               
 
         switch (operator) 
@@ -76,6 +75,7 @@ int main (void) {
                 regs[A] = ~(regs[B] & regs[C]);
                 break;
             case 7:
+                printf("machine halted\n");
                 exit(0);
             case 8:
                 regs[B] = addArray(&arrCount, &arrList, &arr, regs[C]); 
@@ -94,15 +94,19 @@ int main (void) {
                     regs[C] = ch;
                 break;
             case 12:
-                // printf("%d: Load array %d, run position %d\n", pos, regs[B], regs[C]);
                 if (regs[B] != 0) 
                     loadArray(&arrCount, &arrList, &arr, regs[B]);
                 pos = regs[C]-1; // pos++ at the next loop
                 break;
             case 13:
                 regs[(instruction >> 25) & 7] = instruction & 0x01FFFFFF; // bits 26-28 and 1-25
+                break;
+            default:
+                printf("unknown instruction (%d); machine halted\n", operator);
+                exit(1);
         };
     };
 
+    printf("end of program\n");
     return 0;
 };
